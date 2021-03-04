@@ -14,35 +14,82 @@
 #'perform.preprocessing(abstract)
 
 perform.preprocessing <- function (anAbstract) {
-
-# remove bibliographic information from text
-#bibPattern <- "(\\(|[a-z](\\.)*, )((1|2)(0|9)[0-9][0-9](.|..|,|))+([^\\)])*\\)"
-  bibPattern <- "\\((e\\.g\\.\\,? ?)?(([A-z] ?)+; )?([A-Z][a-z]+[^\\)]*\\, )?(1|2)(0|9)[0-9][0-9][a-z]?(\\, ([^\\)])+)?\\)"
+  
+  # patterns to remove bibliographic information from text
+  bibPattern1 <- "\\((e\\.g\\.\\,? ?)?(([A-z] ?)+; )?(([A-Z]\\. )+)?([A-Z][a-z]+[^\\)]*\\, )?(1|2)(0|9)[0-9][0-9][a-z]?(\\, ([^\\)])+)?\\)"
+  bibPattern2 <- "[A-Z][a-z]+( et al\\.)?, (1|2)(0|9)[0-9][0-9][a-z]?\\)"
   # remove capital letter shortcuts (like SDQ-20)
-  shortcutPattern <- "([A-Z][A-Z]+( ?-? ?)|[A-z]+-)[0-9]+"
-  # some key words with following numbers surely not sample size
-  ex <-paste(get.exclusionKeys(), collapse = "| ")
+  shortcutPattern <- "([A-Z][A-Z]+( ?-? ?)|([0-9]+)?[A-z]+-)[0-9]+|[0-9]+-" #das muss ich noch mal pruefen
+  range1 <- "( |\\()[0-9]+-? ?(-|to) ?[0-9]+( |[,;-]|\\)|\\.)"
+  range2 <- "(between|from) [0-9]+ (to|and) [0-9]+"
+  rangePattern <- paste("(", range1, ")|(", range2, ")", sep = "")
+  # remove likert explanation in braces like 1 (very good) to 5 (very bad), so that range can be recognized
+  preprocessed <- gsub(" ?\\([^0-9]+\\)", "", anAbstract)
+  # replace '5- ' or '20-' (have to replace this before text2num()!!)
 
-  preprocessed <- gsub(shortcutPattern, " _REPSC_ ", anAbstract, ignore.case = FALSE)
+  preprocessed <- gsub(rangePattern, " REPRANGE", anAbstract, ignore.case = TRUE)
+  preprocessed <- gsub(shortcutPattern, " REPSC", preprocessed, ignore.case = FALSE)
   # hope that sample size doesn't stand in braces without any letter! next line is important for functioning bib-pattern
-  preprocessed <- gsub("\\([0-9]+\\)", "_REP_", preprocessed)
-  preprocessed <- gsub(bibPattern, " _REPBIB_ ", text2num(preprocessed), ignore.case = FALSE)
+  preprocessed <- gsub("\\([0-9]+( and [0-9]+)?\\)", "REP", preprocessed)
+  preprocessed <- gsub(bibPattern1, "REPBIB", preprocessed, ignore.case = FALSE)
+  preprocessed <- gsub(bibPattern2, "REPBIB", preprocessed, ignore.case = FALSE)
+
+  for(i in 1:2) # remove ',' from numbers and correct for space
+    preprocessed <- gsub("([0-9]),([0-9][0-9][0-9])","\\1\\2",preprocessed)  
   #handle per cent, F(x,xx) (and other upcoming)
-  preprocessed <-gsub("[0-9]+(\\.[0-9]+)? ?(\\%|per cent)", " _REPPC_ ", preprocessed, ignore.case = TRUE)
-  preprocessed <-gsub("[A-Z]+ ?\\([0-9]\\, [0-9]+\\)", " _REPF_ ", preprocessed, ignore.case = FALSE)
+  preprocessed <- gsub("[0-9]+(\\.[0-9]+)? ?(\\%|per )", "REPPC", text2num(preprocessed), ignore.case = TRUE)
+  preprocessed <- gsub("[A-Z]+ ?\\([0-9]\\, [0-9]+\\)", "REPF", preprocessed, ignore.case = FALSE)
+  preprocessed <- gsub("[0-9] [0-9]( [0-9])+", "_REP_NUMCHAIN", preprocessed)
+  preprocessed <- gsub("[^Nn]( = |=)[0-9]+", "_REP_EQU", preprocessed)
+  preprocessed <-gsub("[0-9]+ of [0-9]+", " _REP_xOFy", preprocessed)
   #das hier muss ich noch anders lösen!! Vielleicht thematisch alles was zu schule gehört behandeln
-  preprocessed <-gsub("grade [0-9]+", "_REPG_", preprocessed, ignore.case = TRUE)
-  preprocessed <-gsub("in (1|2)(0|9)[0-9][0-9]( and (1|2)(0|9)[0-9][0-9])?", " _REPYEAR_ ", preprocessed, ignore.case = TRUE )
-  # remove ranges and age specifications (i.e. 1 to 20; between 18 and 70, 3-6, ...)
-  # (kann ich evt. noch vereinfachen / zusammenfassen)
-  rangePattern <- paste("( |\\()[0-9]+( | ?- ?| to )[0-9]+","( ",ex,")?", sep = "")
-  agePattern1 <- "(between|from)? [0-9]+ (and|to) [0-9]+ (days?|weeks?|months?|years?)"
-  agePattern2 <- "age.? (of )?[0-9]+"
-  enumPattern <- paste("([0-9]+-?\\, )+and [0-9]+", sep = "")
-  preprocessed <- gsub(rangePattern, " _REPRANGE_ ", preprocessed, ignore.case = TRUE)
-  preprocessed <- gsub(enumPattern, " _REPENUM_ ", preprocessed, ignore.case = TRUE)
-  preprocessed <- gsub(agePattern1, " _REPAGE_ ", preprocessed, ignore.case = TRUE)
-  preprocessed <- gsub(agePattern2, " _REPAGE_ ", preprocessed, ignore.case = TRUE)
+  preprocessed <-gsub("(version |grade |experiments? |stud(y|ies) )[0-9]+( (to |and )[0-9]+)?", "REPG", preprocessed, ignore.case = TRUE)
+  #eliminate years
+  preprocessed <-gsub("(in |after |before |since |until |till |during )([a-z]+ )?(year )?(1|2)(0|9)[0-9][0-9]( and (1|2)(0|9)[0-9][0-9])?", "REPYEAR", preprocessed, ignore.case = TRUE )
+  preprocessed <-gsub("(< ?|> ?|than |over |under |at (least |most )?)[0-9]+", "REPCOMP", preprocessed, ignore.case = TRUE )
+  preprocessed <-gsub("[0-9]+ (in|or|out of) [0-9]+", "REPOR", preprocessed, ignore.case = TRUE ) 
+  agePattern <- "age(d|s)? (of )?([a-z]+ )?[0-9]+"
+  enumPattern <- paste("([0-9]+-?\\, )+(and|or) [0-9]+[ ,;\\.\\)]", sep = "")
+  
+  preprocessed <- gsub(enumPattern, " REPENUM", preprocessed, ignore.case = TRUE)
+  preprocessed <- gsub(agePattern, " REPAGE_", preprocessed, ignore.case = TRUE)
+  preprocessed <- removeDateInfo(preprocessed)
+  preprocessed <- removeNumbersFollowedByExKey(preprocessed)
+  preprocessed <- removeSubgroupDeclaration(preprocessed) 
+  preprocessed <- gsub("[0-9]+\\-", " _REP", preprocessed)
+  preprocessed <- gsub("(recruited from|identified) [0-9]+ ", "REP_VERBS", preprocessed)
+  preprocessed <- gsub("[Qq]uestionnaire ([A-z]+ )?[0-9]+", "REP_QUEST", preprocessed)
+  preprocessed <- gsub(" (the(se)?|a|or|through|that|their|(out of)|into|all) [0-9]+( |,|;|\\.|\\))", " _REP_", preprocessed)
   # return all remaining sentences with integer values
   return(get.sentences.with.integer(preprocessed))
 }
+
+removeNumbersFollowedByExKey <- function(aText){
+  ex <- get.exclusionKeyPattern()
+  meas <- paste("([0-9]+ (and |or |to ))?[0-9]+",get.measurePattern(), sep = "")
+  text <- gsub(ex, "REPEXKEY ", aText, ignore.case = TRUE)
+  text <- gsub(meas, "REPMEASURE", text, ignore.case = TRUE)
+  return(text)
+}
+
+removeSubgroupDeclaration <- function(aText){
+  # just one subgroup is named? Have to ignore this (sometimes there is also a percentage mentioned with has been replaced before)
+  #hier muss noch ein negative lookahead hin (?!(boys|girls|males|...)), aber es funktioniert nicht recht
+  
+  #oder einfach typische Angaben (mit MAge und so auch mit beruecksichtigen)
+  #subgroupPattern <- "\\([0-9]+ (women|girls|females?|men|boys|males?)([^\\)]+)?\\)"
+  subgroupPattern <- "\\([0-9]+ (women|girls|females?|men|boys|males?)( \\(REPPC\\))?\\)" 
+  text <- gsub(subgroupPattern, " REP_SUBGR", aText, ignore.case = FALSE)
+  return(text)
+}
+
+removeDateInfo <- function(aText){
+  "information like 'january, 31, 2021' or 'march 2001' or '22 february, 2000"
+  year <- "[12][09][0-9][0-9]"
+  day <- "[0-9]+(st|nd|rd|th)?"
+  datePattern <- paste("(",day," )?",get.monthPattern(), "( ",day,")?", ",? (",year,")?", sep = "")
+  text <- gsub(datePattern, " REP_DATE", aText, ignore.case = TRUE)
+  text <- gsub(paste(year," until ","(",year,")?", sep = ""), "REP_DATE", text)
+  return(text)
+}
+

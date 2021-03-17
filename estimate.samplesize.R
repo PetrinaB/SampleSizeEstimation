@@ -56,36 +56,37 @@ estimate.samplesize <- function(anAbstract = "", minmax = "max") {
     if(length(sent <- simple.sample.sentences(sentences)) > 0)
       sentences <- sent
   }
+#print(sentences)
   if(multipleStudies && !isMetaOrReview){
-  #  print ("Mehrere Studien!")
+    #  print ("Mehrere Studien!")
     samp <- processMultipleStudies(anAbstract, minmax)
     if(samp > 0)
       return(samp)
   }
-#  if(isMetaOrReview){
-#    print("Metaanalyse/Review")
-#    print(anAbstract)
-#  }
-print(sentences)
+  #  if(isMetaOrReview){
+  #    print("Metaanalyse/Review")
+  #    print(anAbstract)
+  #  }
+
   for(eachSentence in sentences){
     if(!foundSample || multipleStudies){
-#     remove last punctuation to get "clean" tokens
+      #     remove last punctuation to get "clean" tokens
       theSentence <- substr(eachSentence, 1, nchar(eachSentence)-1)
       # ---------------------------------------------------------------
       # look for frequently used students sample. If sentence contains 
       # 'and', add to numVector else return amount of students
       # ---------------------------------------------------------------
-#      students <- get.student.sample.information(sentence)
-#      if(nchar(students) > 0){
-#        for(i in 1:5)
-#          students <- gsub("([0-9]+) ([A-z]+)", "\\1", students)
-#        print(students)
-#        if(!grepl("and", students))
-#          return(strtoi(students))
-#        re <- regexpr("[0-9]+",students)
-#        students <- substring(students,re,re+attr(re,"match.length"))
-#        numVector <- append(strtoi(students),numVector)
-#      }      
+      #      students <- get.student.sample.information(sentence)
+      #      if(nchar(students) > 0){
+      #        for(i in 1:5)
+      #          students <- gsub("([0-9]+) ([A-z]+)", "\\1", students)
+      #        print(students)
+      #        if(!grepl("and", students))
+      #          return(strtoi(students))
+      #        re <- regexpr("[0-9]+",students)
+      #        students <- substring(students,re,re+attr(re,"match.length"))
+      #        numVector <- append(strtoi(students),numVector)
+      #      }      
       # tokenize sentences (word as token)
       words <- unlist(vectorize.text(theSentence))
       for (index in 1:length(words)){
@@ -103,7 +104,7 @@ print(sentences)
           factor <- ifelse(grepl(doublePattern, currentNgram(index, words, 0,7), ignore.case = TRUE),2, 1)
           # when something like "total of...", "total sample" is followed by num, then we found total sample size
           if(grepl("total ",nGramBefore, ignore.case = TRUE) && !multipleStudies){
-#            print(paste("Estimated samplesize: ",num*factor))
+            #            print(paste("Estimated samplesize: ",num*factor))
             return(num*factor)
           }
           currentIsN <- grepl(nPattern, nGramBefore, ignore.case = ifelse(n_BigAndSmall, FALSE, TRUE))
@@ -111,7 +112,7 @@ print(sentences)
             if(currentIsN)
               numVector <- append(numVector, num)
           } else {
-#            isPossibleSample <- !grepl("schools|communities|classes|classrooms|groups|days|locations|areas|domains|activities|paintings|pictures|images|photos?|organi(z|s)ations|types|categor(y|ies)|records|references|units|(sub)?tests|tasks|facets|factors|facts|studies", nGramAfter)
+            #            isPossibleSample <- !grepl("schools|communities|classes|classrooms|groups|days|locations|areas|domains|activities|paintings|pictures|images|photos?|organi(z|s)ations|types|categor(y|ies)|records|references|units|(sub)?tests|tasks|facets|factors|facts|studies", nGramAfter)
             isPossibleSample <- !grepl(get.notSampleTerms(), nGramAfter)
             # i.e. '100 participants, including 30 patients with ..."
             isSubgroup <- grepl(paste("includ(ing|es?|ed?) (([a-z]+ )+)?",num, sep = ""), nGramBefore) || (foundSample && grepl(paste("\\(",num, sep = ""),nGramBefore))
@@ -133,18 +134,25 @@ print(sentences)
     }
   }
   if(length(numVector) == 0){
-#    print("Estimated samplesize: 0")
+    #    print("Estimated samplesize: 0")
     return(0)
   }
+  # found in an abstract: 78 individuals who made up 39 [...] couples
+
+  if(factor > 1 && length(numVector) == 2 && (sort(numVector,decreasing = TRUE)[1] == sort(numVector,decreasing = TRUE)[2]*factor))
+     return(numVector[1])
   numVector <- processNumbers(numVector, subgroupFlag) 
-#  print(paste("Estimated samplesize: ", numVector*factor))
+  #  print(paste("Estimated samplesize: ", numVector*factor))
   return(numVector*factor)  
 }
 
 processNumbers <- function(aNumVector, aFlag){
-  # found multiple numbers? 
-  # if first number is sum of all other numbers --> return first number (other numbers are reported subgroups)
-  # else: add all numbers up. Exception: if aFlag is set, part of subgroups are reported!
+  # if aNumVector contains only one number, nothing to process (return aNumVector)
+  # else: 
+  #   if first number equals sum of all other numbers, return first number (the other 
+  #   numbers seem to be  reported subgroups
+  #   if aFlag is set, only a part of subgroups is reported. Return first number
+  #   else: add all numbers up.
   if((len <- length(aNumVector)) == 1)
     return(aNumVector)
   first <- aNumVector[1]
@@ -156,8 +164,8 @@ processNumbers <- function(aNumVector, aFlag){
 has.multipleStudies <- function(anAbstract){
   return(grepl("(study|experiment) 1\\,? |in the first (study|experiment)|(( |^)[0-9] (([A-z]+ ){,5})?(studies|experiments))", text2num(anAbstract), ignore.case = TRUE))
 }
-  
-processMultipleStudies <- function(anAbstract, aSample = "max"){
+
+processMultipleStudies <- function(anAbstract, minmax = "max"){
   studVector <- unlist(strsplit2(anAbstract, "(([Ss]tud(y|ies)|[Ee]xperiments?) [0-9])|(([Ff]irst|[Ss]econd)( (study|experiment)|,))", "before"))
   if(length(studVector) < 2)
     return(0)
@@ -170,11 +178,11 @@ processMultipleStudies <- function(anAbstract, aSample = "max"){
     s <- estimate.samplesize(each)
     numVector <- append(numVector,s)
   }
-    if(aSample == "max")
-      numVector <- sort(numVector, decreasing = TRUE)
-    if(aSample == "min")
-      numVector <- sort(numVector, decreasing = TRUE)
-    return(ifelse(length(numVector) > 0, numVector[1], 0))
+  if(minmax == "max")
+    numVector <- sort(numVector, decreasing = TRUE)
+  if(minmax == "min")
+    numVector <- sort(numVector, decreasing = FALSE)
+  return(ifelse(length(numVector) > 0, numVector[1], 0))
 }
 
 simple.sample.sentences <- function(sentenceVector){
@@ -196,7 +204,7 @@ get.student.sample.information <- function(aText){
   # if no match, return value is empty char vector
   pattern <- "(and )?[0-9]+ ([A-z]+ ){0,4}students"
   reg <- regexpr(pattern, aText)
-
+  
   return (substring(aText,reg,reg+attr(reg,"match.length")-1))
 }
 

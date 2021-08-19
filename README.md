@@ -1,6 +1,9 @@
 # SampleSizeEstimation
+the function estimate.samplesize() extracts sample information from an abstract text of a psychological study. In a preceding preprocessing (function perform.preprocessin(), the abstract is prepared by eliminating numbers that are related to bibliographic information, measures, time ... and further words that surely are not indicators to be a sample.
 
-This repository contains material for the project of sample estimation. This is:
+As a required package JATSdecoder has to be loaded.
+
+This repository contains further material for the project of sample estimation. This is:
 
 * csv-files with information about used articles and process of development
 * zip-archieves with articles used for implementation that are open access

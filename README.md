@@ -1,6 +1,6 @@
 # SampleSizeEstimation
 **R-function: estimate.samplesize()**
-Tis function extracts sample information from an abstract text of a psychological study. In a preceding preprocessing (**R-function perform.preprocessin()**, the abstract is prepared by eliminating numbers that are related to bibliographic information, measures, time ... and further words that surely are not indicators to be a sample.
+This function extracts sample information from an abstract text of a psychological study. In a preceding preprocessing (**R-function perform.preprocessin()**, the abstract is prepared by eliminating numbers that are related to bibliographic information, measures, time ... and further words that surely are not indicators to be a sample.
 
 As a dependency the R-package **JATSdecoder** has to be loaded.
 

@@ -9,10 +9,14 @@ This repository contains further material for the project of sample estimation. 
 * csv-files with information about used articles and process of development of the estimation algorithm
 * zip-archieves with open access articles used for implementation
 
-csv file with the results of a manuel examination of sample size (seperated by semicolon):
-- [samples_step1.csv](https://github.com/PetrinaB/SampleSizeEstimation/files/7022204/samples_step1.csv)
+csv file with the results of a manuel examination of sample size (semicolon seperated):
+- [samples_step1.csv](https://github.com/PetrinaB/SampleSizeEstimation/files/7024533/samples_step1.csv)
 
-csv file with article abstracts used for training the algorithm (not open access journal, so only doi is provided in this smicolon seperated csv file):
+same csv file 'samples_step1.csv' with assigned cases 1 to 8:
+- [samples_step1_cases.csv](https://github.com/PetrinaB/SampleSizeEstimation/files/7024583/samples_step1_cases.csv)
+
+
+csv file with article abstracts used for training the algorithm (not open access journal, so only doi is provided in this semicolon seperated csv file):
 - [samples_step2_training1.csv](https://github.com/PetrinaB/SampleSizeEstimation/files/7022209/samples_step2_training1.csv)
 
 two zip archieves. Both with a set of articles in nxml file format used for further training and evaluation (journal is open access - source is PubMed Central database):

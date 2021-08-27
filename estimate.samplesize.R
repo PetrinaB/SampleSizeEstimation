@@ -1,14 +1,17 @@
 #'estimate.samplesize
 #'
-#'extracts an estimated sample size given in the abstract text of a psychological study
-#'@param text a string or character vector with the abstract of an article
-#'@param minmax a parameter to decide for multiple experiments or studies whether the 
-#'smallest or the largest sample will be returned #'possible values are "min" and "max" 
-#'with "max" as default value 
+#'estimation of sample size mentioned in the abstract of a psychological study
+#'
+#'returns an integer value as sample size estimation
+#'
+#'@param anAbstract a string or character vector with the abstract of an article
+#'@param minmax a parameter to decide for multiple experiments or studies whether the
+#'smallest or the largest sample will be returned #'possible values are "min" and "max"
+#'with "max" as default value
 #'
 #'@details
-#'This function estimates the sample size mentioned in the abstract of a posychological study. 
-#'Some heuristics help to identify sentences with a sample information, some calculations lead 
+#'This function estimates the sample size mentioned in the abstract of a posychological study.
+#'Some heuristics help to identify sentences with a sample information, some calculations lead
 #'to an overall sample, if sub samples are mentioned.
 #'If there's no indication of a sample size, return value is 0
 #'
@@ -26,7 +29,7 @@
 # a) found samples smaller than 5 are ignored (--> case studies)
 # b) when sample size is found in sentence -- break!
 # c) somegthing like ' N = ... ', 'total of...', 'individuals', ' participants' ... are indicators
-# d) some key words indicate, that integer is no sample size information (exclusion keys)  
+# d) some key words indicate, that integer is no sample size information (exclusion keys)
 # ************************************************************************************
 estimate.samplesize <- function(anAbstract = "", minmax = "max") {
   if(is.null(anAbstract))
@@ -62,7 +65,7 @@ estimate.samplesize <- function(anAbstract = "", minmax = "max") {
       # remove last punctuation to get "clean" tokens
       theSentence <- substr(eachSentence, 1, nchar(eachSentence)-1)
       # tokenize sentences (word as token)
-      words <- unlist(vectorize.text(theSentence))
+      words <- unlist(JATSdecoder::vectorize.text(theSentence))
       for (index in 1:length(words)){
         token <- tolower(words[index])
         #clean the token
@@ -75,16 +78,17 @@ estimate.samplesize <- function(anAbstract = "", minmax = "max") {
           nGramAfter <- currentNgram(index, words, 0,5)
           nPattern <- ifelse(n_BigAndSmall, paste0("N ?= ?",num), paste0("n ?= ?",num))
           factor <- ifelse(grepl(doublePattern, theSentence, ignore.case = TRUE),2, 1)
+          isPossibleSample <- !grepl(get.exclusionKeys(), nGramAfter)
           # if found something like "total of...", "total sample" is followed by num, then it seems to be total sample size
-          if(grepl("total ",nGramBefore, ignore.case = TRUE) && !multipleStudies)
+          if(grepl("total ",nGramBefore, ignore.case = TRUE) && !multipleStudies && isPossibleSample)
             return(num*factor)
-          # look wheter n/N = comes before current integer 
+          # look wheter n/N = comes before current integer
           currentIsN <- grepl(nPattern, nGramBefore, ignore.case = ifelse(n_BigAndSmall, FALSE, TRUE))
           if(onlyNcounts){ # if 'n = ' in text, then only numbers with 'n = ' count
             if(currentIsN)
               numVector <- append(numVector, num)
           } else {
-            isPossibleSample <- !grepl(get.exKeys(), nGramAfter)
+            isPossibleSample <- !grepl(get.exclusionKeys(), nGramAfter)
             # e.g. '100 participants, including 30 patients with ..."
             isSubgroupType1 <- grepl(paste("including (([a-z]+ )+)?",num, sep = ""), nGramBefore)
             # e.g. '100 students (40 female)...
@@ -94,7 +98,7 @@ estimate.samplesize <- function(anAbstract = "", minmax = "max") {
             subgroupFlag <- ifelse(isSubgroupType1, subgroupFlag + 1, subgroupFlag)
             if(isPossibleSample && !isSubgroupType2 && !isFromTerm)
               numVector <- append(numVector, num)
-            }
+          }
           #only samples greater than 4 count
           numVector <- numVector[numVector > 4]
         }
@@ -113,20 +117,21 @@ estimate.samplesize <- function(anAbstract = "", minmax = "max") {
   }
   # handle special case found in an abstract: 78 individuals who made up 39 [...] couples
   if(factor > 1 && length(numVector) == 2 && (sort(numVector,decreasing = TRUE)[1] == sort(numVector,decreasing = TRUE)[2]*factor))
-     return(numVector[1])
+    return(numVector[1])
   # process found numbers:
-  estimation <- processNumbers(numVector, subgroupFlag) 
-  return(estimation*factor)  
+  estimation <- processNumbers(numVector, subgroupFlag)
+  return(estimation*factor)
 }
 
 processNumbers <- function(aNumVector, aFlag){
-  # if aNumVector contains only one element, nothing to process (return aNumVector)
-  # else: if first number equals sum of all other numbers, return first number (the other 
-  #       numbers seem to be  reported subgroups
-  #       if aFlag is set, only a part of subgroups is reported. Return first number
-  #       else: add all numbers up.
+  # if aNumVector contains only one number, nothing to process (return aNumVector)
+  # else:
+  #   if first number equals sum of all other numbers, return first number (the other
+  #   numbers seem to be  reported subgroups
+  #   if aFlag is set, only a part of subgroups is reported. Return first number
+  #   else: add all numbers up.
   if((len <- length(aNumVector)) == 1)
-    return(aNumVector[1])
+    return(aNumVector)
   first <- aNumVector[1]
   rest <- aNumVector[2:len]
   subGroupsReported <- aFlag > 0
@@ -134,15 +139,17 @@ processNumbers <- function(aNumVector, aFlag){
 }
 
 has.multipleStudies <- function(anAbstract){
-  return(grepl("(study|experiment) 1\\,? |in the first (study|experiment)|(( |^)[0-9] (([A-z]+ ){,5})?(studies|experiments))", text2num(anAbstract), ignore.case = TRUE))
+  return(grepl("(study|experiment) 1\\,? |in the first (study|experiment)|(( |^)[0-9] (([A-z]+ ){,5})?(studies|experiments))", JATSdecoder::text2num(anAbstract), ignore.case = TRUE))
 }
 
 processMultipleStudies <- function(anAbstract, minmax = "max"){
-  studVector <- unlist(strsplit2(anAbstract, "(([Ss]tud(y|ies)|[Ee]xperiments?) [0-9])|(([Ff]irst|[Ss]econd)( (study|experiment)|,))", "before"))
+  studVector <- unlist(JATSdecoder::strsplit2(anAbstract, "(([Ss]tud(y|ies)|[Ee]xperiments?) [0-9])|(([Ff]irst|[Ss]econd)( (study|experiment)|,))", "before"))
   if(length(studVector) < 2)
     return(0)
   numVector <- c()
   start <- ifelse(grepl(anAbstract, pattern = "[Ss]tudy 1[;\\.\\)]"), 1,2)
+  #print(start)
+  #print(studVector)
   for(index in start:length(studVector)){
     each <- gsub("([Ss]tudy|studies|[Ee]xperiments?)( [0-9] ?(to|-|and) ?[0-9])?","REP_STUD", studVector[index])
     s <- estimate.samplesize(each)
@@ -154,10 +161,24 @@ processMultipleStudies <- function(anAbstract, minmax = "max"){
     numVector <- sort(numVector, decreasing = FALSE)
   return(ifelse(length(numVector) > 0, numVector[1], 0))
 }
+###################################################################################
+#  this function return an n-gram around an element of aVector -
+#  n-gram boundaries are the given lower- and upperLimit around anIndex
+###################################################################################
+
+currentNgram <- function (anIndex, aVector, lowerLimit, upperLimit){
+  currNgram <- c()
+  for(i in lowerLimit:upperLimit){
+    if(anIndex + i > 0)
+      currNgram <- append(currNgram,aVector[anIndex + i])
+  }
+  currNgram <- currNgram[!is.na(currNgram)]
+  return(paste(currNgram, collapse = " "))
+}
+
 
 simple.sample.sentences <- function(sentenceVector){
-  # find sentences with some often used sample references. This can be a short cut
-  # but not often in use.
+  # find sentences with some often used sample references
   pattern1 <- "([Pp]articipants were [0-9]+( [a-z]+)+)"
   pattern2 <- "([0-9]+ ([A-z]+ )+(participated|were included))"
   pattern3 <- "[0-9]+ individuals"
@@ -165,23 +186,26 @@ simple.sample.sentences <- function(sentenceVector){
   pattern5 <- "([0-9]+ ([A-z]+ ){0,4}students)"
   pattern6 <- "(data (was |were )?(drawn |collected )?from [0-9]+)"
   pattern7 <- "(A total of [0-9]+)"
-  thePattern <- paste0(pattern1, "|", pattern2, "|", pattern3, "|", pattern4,"|", pattern5,"|", pattern6,"|", pattern7)
-  sentences <- unlist(lapply(sentenceVector, get.sentence.with.pattern, thePattern))
+  thePattern <- paste(pattern1, "|", pattern2, "|", pattern3, "|", pattern4,"|", pattern5,"|", pattern6,"|", pattern7, sep = "")
+  sentences <- unlist(lapply(sentenceVector, JATSdecoder::get.sentence.with.pattern, thePattern))
   sentences <- sentences[sentences>0]
   return(sentences)
 }
 
-
-get.exKeys <- function(){
+get.exclusionKeys <- function(){
   # returns pattern for words that are not kind of sample.
   # these words must not always be located directly behind a number but also in the ngram after
-  school <- "class(es|rooms)|schools|groups|"
+  education <- "class(es|rooms)|schools|groups|universities"
   locations <- "areas|locations|communities|organi(z|s)ations|hospitals|"
-  study <- "studies|experiments|(sub)?tests|tasks|factors|dimensions|references|records|"
+  study <- "studies|experiments|tasks|references|articles|papers|guidelines|records|databases|"
+  psych <- "trials|sessions|analyses|"
+  testconstr <- "scales|items?|factors?|(sub)?tests|dimensions|"
   grouping <- "domains|types|categor(y|ies)|units|facets|levels|blocks|"
   audioVisual <- "images|paintings|photo(s|graphs)?|pictures|tones?|"
   time <- "days|decades|"
   #last entry -> no OR-Pipe
-  other <- "activities|sessions|facts"
-  return (paste0(school, locations, study, grouping, audioVisual, time, other))
+  other <- "activities|facts|elements|objects|points?|steps?|concepts"
+  return (paste0(education, locations, study, psych, testconstr, grouping, audioVisual, time, other))
 }
+
+

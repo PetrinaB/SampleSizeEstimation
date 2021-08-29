@@ -75,7 +75,7 @@ estimate.samplesize <- function(anAbstract = "", minmax = "max") {
           # look at some words before and after current number
           nGramBefore <- currentNgram(index, words, -4,1)
           nGramBefore <- gsub(",", "", nGramBefore)
-          nGramAfter <- currentNgram(index, words, 0,5)
+          nGramAfter <- currentNgram(index, words, 0,3)
           nPattern <- ifelse(n_BigAndSmall, paste0("N ?= ?",num), paste0("n ?= ?",num))
           factor <- ifelse(grepl(doublePattern, theSentence, ignore.case = TRUE),2, 1)
           isPossibleSample <- !grepl(get.exclusionKeys(), nGramAfter)
@@ -192,14 +192,21 @@ simple.sample.sentences <- function(sentenceVector){
   return(sentences)
 }
 
+#***********************************************************************************************
+# this function provides the fundamental list of key words to recognize non-relevant integers
+# all 'exclusion keys' are put together as a regex pattern to filter them with pattern matching.
+# Add further keys seperated by '|' to supplement this list.
+# **********************************************************************************************
+
 get.exclusionKeys <- function(){
   # returns pattern for words that are not kind of sample.
-  # these words must not always be located directly behind a number but also in the ngram after
-  education <- "class(es|rooms)|schools|groups|universities"
-  locations <- "areas|locations|communities|organi(z|s)ations|hospitals|"
-  study <- "studies|experiments|tasks|references|articles|papers|guidelines|records|databases|"
+  # these words must not always be located directly behind a number but
+  # also in the ngram after
+  education <- "class(es|rooms)|schools|groups|universities|"
+  locations <- "rooms|areas|locations|communities|organi(z|s)ations|hospitals|"
+  study <- "studies|experiments|tasks|references|articles|papers|records|databases|"
   psych <- "trials|sessions|analyses|"
-  testconstr <- "scales|items?|factors?|(sub)?tests|dimensions|"
+  testconstr <- "scales|items?|factors?|(sub)?tests|dimensions|guidelines|"
   grouping <- "domains|types|categor(y|ies)|units|facets|levels|blocks|"
   audioVisual <- "images|paintings|photo(s|graphs)?|pictures|tones?|"
   time <- "days|decades|"

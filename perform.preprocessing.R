@@ -41,7 +41,7 @@ perform.preprocessing <- function (anAbstract) {
   enumPattern <- paste0("([0-9]+-?\\, )+(and|or) [0-9]+")
   preprocessed <- gsub(enumPattern, " REP _ENUM", JATSdecoder::text2num(preprocessed), ignore.case = TRUE)
   #handle per cent, F(x, xx) (and other upcoming)
-  preprocessed <- gsub("[0-9]+(\\.[0-9]+)? ?(\\%|per )", " REP _PC ", preprocessed, ignore.case = TRUE)
+  preprocessed <- gsub("[0-9]+(\\.[0-9]+)? ?(\\%|per )", " REP _PER ", preprocessed, ignore.case = TRUE)
   preprocessed <- gsub("[A-Z]+ ?\\([0-9]\\, [0-9]+\\)", " REP _F ", preprocessed, ignore.case = FALSE)
   preprocessed <- gsub("[0-9] [0-9]( [0-9])+", " REP _NUMCHAIN ", preprocessed)
   preprocessed <- gsub("[^Nn]( = |=)[0-9]+", " REP _EQU ", preprocessed)
@@ -89,7 +89,7 @@ removeDateAndTimeInfo <- function(aText){
   text <- gsub(datePattern, " REP _DATE", aText, ignore.case = TRUE)
   text <- gsub(paste0(year," until ","(",year,")?"), " REP _DATE", text)
   "information like '20 weeks' or 'a 6 month follow up'"
-  text <- gsub(" [0-9]+ (times?|hours?|days?|weeks?|months?|years?|waves?)",
+  text <- gsub(" [0-9]+ (times|hours|days|weeks|months|years|waves)",
                " REP _TIME", text, ignore.case = TRUE)
   return(text)
 }

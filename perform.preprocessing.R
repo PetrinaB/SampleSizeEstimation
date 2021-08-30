@@ -59,7 +59,7 @@ perform.preprocessing <- function (anAbstract) {
   preprocessed <- removeMeasure(preprocessed)
   preprocessed <- removeSubgroupDeclaration(preprocessed)
   preprocessed <- gsub("[0-9]+\\-", " REP _NUM_HyPHEN", preprocessed)
-  preprocessed <- gsub("[0-9]+ (possible|main|specific|different|familiar|functional|public|private)", "REP _ADJS", preprocessed)
+  preprocessed <- gsub("[0-9]+ (possible|main|specific|different|familiar|functional|dimensional|public|private)", "REP _ADJS", preprocessed)
   preprocessed <- gsub("(recruited from|identified|completed) [0-9]+ ", "REP _VERBS", preprocessed)
   preprocessed <- gsub("(from|at) [0-9]+ ([a-z]+ )?(schools|universities|hospitals)", " REP _FROM", preprocessed)
   preprocessed <- gsub("[Qq]uestionnaire ([A-z]+ )?[0-9]+", " REP _QUEST", preprocessed)

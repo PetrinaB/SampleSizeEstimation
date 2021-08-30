@@ -9,19 +9,26 @@ This repository contains further material for the project of sample estimation. 
 * csv-files with information about used articles and process of development of the estimation algorithm
 * zip-archives with open access articles used for implementation
 
+**Exploratory investigation:** <br />
 csv-file with the results of a manual examination of sample size (semicolon separated):
 - [sampStep1.csv](https://github.com/PetrinaB/SampleSizeEstimation/files/7038355/sampStep1.csv)
 
 same-csv file 'samples_step1.csv' with assigned cases 1 to 8:
 - [sampStep1_ca.csv](https://github.com/PetrinaB/SampleSizeEstimation/files/7038358/sampStep1_ca.csv)
 
-csv-file with article abstracts used for training the algorithm (not open access journal, so only doi is provided in this semicolon separated csv file):
+**Training:**  <br />
+csv-file with article abstracts, used for training the algorithm (not open access journal, so only doi is provided in this semicolon separated csv file):
 - [sampStep2_tr1.csv](https://github.com/PetrinaB/SampleSizeEstimation/files/7038360/sampStep2_tr1.csv)
 
-
-two zip archives. Both with a set of articles in nxml file format used for further training and evaluation (journal is open access - source is PubMed Central database):
+zip-archive with a set of articles in nxml file format, used for further training (journal is open access - source: PubMed Central database):
 - [sampStep2_tr2.zip](https://github.com/PetrinaB/SampleSizeEstimation/files/7038364/sampStep2_tr2.zip)
+
+**Evaluation**: <br />
+zip-archive with articles in xml file format, used for evaluation
 - [sampStep3_ev.zip](https://github.com/PetrinaB/SampleSizeEstimation/files/7038368/sampStep3_ev.zip)
+
+csv-file with the evaluation result
+- [sampStep3_ev.csv](https://github.com/PetrinaB/SampleSizeEstimation/files/7079769/sampStep3_ev.csv)
 
 
 
